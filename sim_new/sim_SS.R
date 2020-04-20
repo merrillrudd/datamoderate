@@ -38,9 +38,9 @@ ignore <- sapply(1:length(R_fun), function(x) source(file.path(R_path, R_fun[x])
 
 ## read life history info
 lh_info <- read.csv(file.path(proj_path, "life_history_info.csv")) %>%
-  mutate(ShortName = ifelse(Longevity == "Shorter" & Growth == "Slower", "shs",
-                            ifelse(Longevity == "Shorter" & Growth == "Faster", "shf",
-                                   ifelse(Longevity == "Longer" & Growth == "Slower", "los", "lof"))))
+  mutate(ShortName = ifelse(Longevity == "Shorter" & Growth == "Slower", "short_slow",
+                            ifelse(Longevity == "Shorter" & Growth == "Faster", "short_fast",
+                                   ifelse(Longevity == "Longer" & Growth == "Slower", "long_slow", "long_fast"))))
 
 L_a <- sapply(1:nrow(lh_info), function(x) lh_info[x,"Linf"]*(1 - exp(-lh_info[x,"k"]*(0:lh_info[x,"Amax"] - (-1)))))
 lh_info$L_at_Amin <- sapply(1:length(L_a), function(x) L_a[[x]][1])
@@ -73,13 +73,15 @@ f2 <- c(seq(0.01, 2, length.out = 55), rep(2, 5), seq(2, 0.6, length.out = 40))
 ########################
 ### deterministic
 ########################
+## scenarios to simulate
 lh_vec <- lh_info$ShortName
 SigRscen <- c("Deterministic")
 Fscen <- c("F1")
 name <- "sim_deterministic"
 
-## scenarios to simulate
 sim_grid <- expand.grid("SigmaR" = SigRscen, "F"=Fscen, "LifeHistory" = lh_vec)
+
+## simulate scenarios
 itervec <- 1
 rewrite = FALSE
 start <- Sys.time()
@@ -92,30 +94,31 @@ sim_det <- simulate_pop(df = sim_grid,
                          rewrite = rewrite)
 end_gen <- Sys.time() - start
 
+## read simulations
 sim_wide <- get_results(mod_path = sim_path,
                         df = sim_grid,
                         itervec = itervec,
                         read_truth = TRUE,
-                        rewrite = TRUE,
                         res_name = paste0(name, "_wide"))
 sim_long <- sim_wide %>% 
   select(-c(max_grad)) %>%
   pivot_longer(-c(iteration, lifehistory, year, SigmaR, Rest, Fscen), names_to = "variable", values_to = "true") %>%
   filter(grepl("_sd", variable) == FALSE)
-write.csv(sim_long, file.path(sim_path, paste0(name,"_long.csv")), row.names = FALSE)
+write.csv(sim_long, file.path(sim_path, "results", paste0(name,"_long.csv")), row.names = FALSE)
 
 
 ########################
 ### variable
 ########################
+## scenarios to simulate
 lh_vec <- lh_info$ShortName
-SigRscen <- c("LowSigmaR")
-Fscen <- c("F1")#, "F2")
+SigRscen <- c("LowSigmaR","HighSigmaR")
+Fscen <- c("F1")
 name <- "sim_variable"
 
-## scenarios to simulate
 sim_grid <- expand.grid("SigmaR" = SigRscen, "F"=Fscen, "LifeHistory" = lh_vec)
 
+## simulate scenarios
 itervec <- 1:100
 rewrite <- FALSE
 start <- Sys.time()
@@ -132,92 +135,75 @@ sim_wide <- get_results(mod_path = sim_path,
                         df = sim_grid,
                         itervec = itervec,
                         read_truth = TRUE,
-                        rewrite = TRUE,
                         res_name = paste0(name,"_wide"))
 sim_long <- sim_wide %>% 
   select(-c(max_grad)) %>%
   pivot_longer(-c(iteration, lifehistory, year, SigmaR, Rest, Fscen), names_to = "variable", values_to = "true") %>%
   filter(grepl("_sd", variable) == FALSE)
-write.csv(sim_long, file.path(sim_path,paste0(name,"_long.csv")), row.names = FALSE)
+write.csv(sim_long, file.path(sim_path, "results", paste0(name,"_long.csv")), row.names = FALSE)
 
 ### explore true population
-sim_det <- read.csv(file.path(sim_path, "sim_deterministic_long.csv"), stringsAsFactors = FALSE)
-sim_det <- sim_det %>%
-  mutate(Longevity = ifelse(grepl("lo", lifehistory), "Longer-living", "Shorter-living")) %>%
-  mutate(Growth = ifelse(lifehistory %in% c("los","shs"), "Slower-growing", "Faster-growing")) %>%
-  mutate(Fscen = "F1")
-
-sim_var <- read.csv(file.path(sim_path, "sim_variable_long.csv"), stringsAsFactors = FALSE)
-sim_var <- sim_var %>%
-  mutate(Longevity = ifelse(grepl("lo", lifehistory), "Longer-living", "Shorter-living")) %>%
-  mutate(Growth = ifelse(lifehistory %in% c("los","shs"), "Slower-growing", "Faster-growing"))
+sim_det <- read.csv(file.path(sim_path,"results", "sim_deterministic_long.csv"), stringsAsFactors = FALSE)
+sim_var <- read.csv(file.path(sim_path, "results", "sim_variable_long.csv"), stringsAsFactors = FALSE)
 
 sim_long <- full_join(sim_det, sim_var)
-write.csv(sim_long, file.path(sim_path, "sim_all_long.csv"), row.names = FALSE)
+write.csv(sim_long, file.path(sim_path, "results", "sim_all_long.csv"), row.names = FALSE)
 
-sim_long <- read.csv(file.path(sim_path, "sim_all_long.csv"))
-check_p1 <- sim_long %>% filter(variable == "Recruit") %>% filter(SigmaR == "LowSigmaR")
-check_p1$SigmaR <- factor(check_p1$SigmaR, levels = c("LowSigmaR"))
-p1 <- ggplot(check_p1, aes(x = year, y = true)) +
+sim_long <- read.csv(file.path(sim_path, "results", "sim_all_long.csv"))
+sim_long$SigmaR <- as.character(sim_long$SigmaR)
+sim_long <- sim_long %>%
+  mutate(SigmaR_desc = replace(SigmaR, which(SigmaR == "LowSigmaR"), "SigmaR = 0.4"),
+         SigmaR_desc = replace(SigmaR_desc, which(SigmaR_desc == "HighSigmaR"), "SigmaR = 0.8")) %>%
+  mutate(Longevity = ifelse(grepl("long_", lifehistory), "Long-lived", "Short-lived")) %>%
+  mutate(Growth = ifelse(grepl("_slow", lifehistory), "Slow-growing", "Fast-growing"))
+
+check <- sim_long %>% filter(variable == "Recruit") 
+p_recom <- ggplot(check, aes(x = year, y = true)) +
   stat_summary(aes(fill = lifehistory), fun.min = function(x) stats::quantile(x, 0.05), fun.max = function(x) stats::quantile(x, 0.95), geom = "ribbon", alpha = 0.125) +
   stat_summary(aes(fill = lifehistory), fun.min = function(x) stats::quantile(x, 0.25), fun.max = function(x) stats::quantile(x, 0.75), geom = "ribbon", alpha = 0.25) +
   stat_summary(aes(colour = lifehistory, linetype = factor(SigmaR)), fun = function(x) stats::quantile(x, 0.5), geom = "line", lwd = 2) +
-  geom_line(data = check_p1 %>% filter(iteration == 1), aes(linetype = factor(SigmaR))) +
-  facet_grid(Longevity + Growth~SigmaR+Fscen) +
+  geom_line(data = check %>% filter(iteration == 1), aes(linetype = factor(SigmaR))) +
+  facet_grid(Longevity + Growth ~ SigmaR_desc) +
   scale_fill_brewer(palette = "Set1") +
   scale_color_brewer(palette = "Set1") +
   guides(fill = FALSE, color = FALSE, linetype = FALSE) +
   expand_limits(y = 0) +
   xlab("Year") + ylab("Recruitment") +
-  theme_bw()
-ggsave(file.path(fig_path, "Recruit_OM.png"), p1, height = 10, width = 8)
+  theme_bw(base_size = 14)
+ggsave(file.path(fig_path, "Recruit_OM.png"), p_recom, height = 10, width = 12)
 
-check_p2 <- sim_long %>% filter(variable == "Depletion") %>% filter(SigmaR == "LowSigmaR")
-check_p2$SigmaR <- factor(check_p2$SigmaR, levels = c("LowSigmaR"))
-p2 <- ggplot(check_p2, aes(x = year, y = true)) +
+check <- sim_long %>% filter(variable == "Depletion") 
+p_deplom <- ggplot(check, aes(x = year, y = true)) +
   stat_summary(aes(fill = lifehistory), fun.min = function(x) stats::quantile(x, 0.05), fun.max = function(x) stats::quantile(x, 0.95), geom = "ribbon", alpha = 0.125) +
   stat_summary(aes(fill = lifehistory), fun.min = function(x) stats::quantile(x, 0.25), fun.max = function(x) stats::quantile(x, 0.75), geom = "ribbon", alpha = 0.25) +
   stat_summary(aes(colour = lifehistory, linetype = factor(SigmaR)), fun = function(x) stats::quantile(x, 0.5), geom = "line", lwd = 2) +
-  geom_line(data = check_p2 %>% filter(iteration == 1), aes(linetype = factor(SigmaR))) +
-  facet_grid(Longevity+Growth~SigmaR+Fscen) +
+  geom_line(data = check %>% filter(iteration == 1), aes(linetype = factor(SigmaR))) +
+  facet_grid(Longevity + Growth ~ SigmaR_desc) +
   scale_fill_brewer(palette = "Set1") +
   scale_color_brewer(palette = "Set1") +
   guides(fill = FALSE, color = FALSE, linetype = FALSE) +
   expand_limits(y = 0) +
   xlab("Year") + ylab("Depletion") +
-  theme_bw()
-ggsave(file.path(fig_path, "Depletion_OM.png"), p2, height = 10, width = 8)
+  theme_bw(base_size = 14)
+ggsave(file.path(fig_path, "Depletion_OM.png"), p_deplom, height = 10, width = 12)
 
-sub <- check_p2 %>% filter(year == 100)
-sum <- sub %>% group_by(lifehistory, SigmaR) %>%
-  summarise(p5 = quantile(true,0.05),
-            p50 = quantile(true, 0.5),
-            p95 = quantile(true, 0.95))
 
-check_p3 <- sim_long %>% filter(variable == "F") %>% filter(SigmaR == "LowSigmaR")
-check_p3$SigmaR <- factor(check_p3$SigmaR, levels = c("LowSigmaR"))
-p3 <- ggplot(check_p3, aes(x = year, y = true)) +
+check <- sim_long %>% filter(variable == "F")
+p_fom <- ggplot(check, aes(x = year, y = true)) +
   stat_summary(aes(fill = lifehistory), fun.min = function(x) stats::quantile(x, 0.05), fun.max = function(x) stats::quantile(x, 0.95), geom = "ribbon", alpha = 0.125) +
   stat_summary(aes(fill = lifehistory), fun.min = function(x) stats::quantile(x, 0.25), fun.max = function(x) stats::quantile(x, 0.75), geom = "ribbon", alpha = 0.25) +
   stat_summary(aes(colour = lifehistory, linetype = factor(SigmaR)), fun = function(x) stats::quantile(x, 0.5), geom = "line", lwd = 2) +
-  facet_grid(Longevity+Growth~SigmaR+Fscen) +
+  facet_grid(Longevity + Growth ~ SigmaR_desc) +
   scale_fill_brewer(palette = "Set1") +
   scale_color_brewer(palette = "Set1") +
   guides(fill = FALSE, color = FALSE, linetype = FALSE) +
   expand_limits(y = 0) +
   xlab("Year") + ylab("Fishing mortality rate") +
-  theme_bw()
-ggsave(file.path(fig_path, "FishingMortality_OM.png"), p3, height = 10, width = 8)
-
-sub <- check_p3 %>% filter(year == 100)
-sum <- sub %>% group_by(lifehistory, SigmaR) %>%
-  summarise(p5 = quantile(true,0.05),
-            p50 = quantile(true, 0.5),
-            p95 = quantile(true, 0.95),
-            sd = sd(true))
+  theme_bw(base_size = 14)
+ggsave(file.path(fig_path, "FishingMortality_OM.png"), p_fom, height = 10, width = 12)
 
 
-###########################################
+##########################################
 ## Estimation model
 ##########################################
 #############################
@@ -242,6 +228,7 @@ run_ss(df = scen_grid,
        clean = FALSE, 
        rewrite = rewrite, 
        run_noest = FALSE, 
+       run_hess = FALSE,
        ncores = 4)
 end_run <- Sys.time() - start
 
@@ -250,11 +237,10 @@ res_wide <- get_results(mod_path = sim_path,
                         itervec = itervec, 
                         read_truth = FALSE, 
                         Rscen = c("R_unadjusted","R_biasadjusted"),
-                        rewrite = TRUE, 
                         res_name = paste0(res_name, "_wide"))
 
 res_long_all <- res_wide %>%
-  pivot_longer(-c(iteration, lifehistory, year, max_grad, SigmaR, Rest, Lyears, Nsamp, Fscen), names_to = "variable", values_to = "estimate")
+  pivot_longer(-c(iteration, lifehistory, year, max_grad, SigmaR, Rest, Rich, Lyears, Nsamp, Fscen), names_to = "variable", values_to = "estimate")
 
 res_long_mle <- res_long_all %>% filter(grepl("_sd", variable) == FALSE)
 res_long_sd <- res_long_all %>% filter(grepl("_sd", variable)) %>% 
@@ -263,30 +249,64 @@ res_long_sd <- res_long_all %>% filter(grepl("_sd", variable)) %>%
   select(-rm)
 res_long <- full_join(res_long_mle, res_long_sd)
 
-write.csv(res_long, file.path(sim_path, paste0(res_name, "_long.csv")), row.names = FALSE)
+write.csv(res_long, file.path(sim_path, "results", paste0(res_name, "_long.csv")), row.names = FALSE)
 
-true <- read.csv(file.path(sim_path, "sim_deterministic_long.csv")) %>% select(-Rest)
-res <- read.csv(file.path(sim_path, "results_det_long.csv"))
+true <- read.csv(file.path(sim_path, "results", "sim_deterministic_long.csv")) %>% select(-Rest)
+res <- read.csv(file.path(sim_path, "results", "results_det_long.csv"))
 all <- left_join(res, true, join_by = c(year, lifehistory, iteration, SigmaR, variable))
 all_info <- all %>% 
-  mutate(re = (estimate - true)/true) %>%
-  mutate(P25 = estimate - 0.675*sd) %>%
-  mutate(P75 = estimate + 0.675*sd) %>%
-  mutate(cover = ifelse(true >= P25 & true <= P75, 1, 0))
+  mutate(re = (estimate - true)/true) #%>%
+  # mutate(P25 = estimate - 0.675*sd) %>%
+  # mutate(P75 = estimate + 0.675*sd) %>%
+  # mutate(cover = ifelse(true >= P25 & true <= P75, 1, 0))
 
 sum_final <- all_info %>%
   filter(year %in% c(100)) %>%
   group_by(lifehistory, Rest, SigmaR, Lyears, Nsamp, variable, year) %>%
   summarise(mre = median(re, na.rm = TRUE),
             mare = median(abs(re), na.rm = TRUE),
-            pconverge = length(which(max_grad <= 1))/length(max_grad),
-            pcover = sum(cover, na.rm=TRUE)/length(which(is.na(cover) == FALSE))) %>%
-  filter(variable == "Depletion")
+            pconverge = length(which(max_grad <= 1))/length(max_grad))#,
+            #pcover = sum(cover, na.rm=TRUE)/length(which(is.na(cover) == FALSE)))# %>%
+  #filter(variable == "Depletion")
 write.csv(sum_final, file.path(fig_path, "RE_summary_deterministic.csv"))
+
+check <- all_info %>% 
+  filter(variable %in% c("Recruit","F","SSB","Depletion")) %>% 
+  select(-c(sd,re)) %>%
+  pivot_longer(cols=c(estimate,true), names_to = "model", values_to = "value")
+p_det_check <- ggplot(check) +
+  geom_line(aes(x = year, y = value, color = model, linetype = model), lwd = 2) +
+  facet_wrap(lifehistory~variable, scales ="free_y", nrow = 4) +
+  theme_bw(base_size = 14)
 
 #############################
 ## run with variation
 #############################
+## perfect, rich 
+lh_vec <- lh_info$ShortName
+SigRscen <- c("LowSigmaR")
+Lyears <- c("L100")
+Lsamp <- c("perfect")
+Fscen <- c("F1")
+res_name <- "results_variable"
+Rich <- c(TRUE)
+
+scen_grid_rich <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich)
+scen_grid <- scen_grid_rich
+ncores <- 14
+itervec <- 1:14
+rewrite = FALSE
+start <- Sys.time()
+run_ss(df = scen_grid, 
+       path = sim_path, 
+       itervec = itervec,
+       clean = FALSE, 
+       rewrite = rewrite, 
+       run_noest = FALSE, 
+       ncores = ncores)
+end_run <- Sys.time() - start
+
+
 ## perfect
 lh_vec <- lh_info$ShortName
 SigRscen <- c("LowSigmaR")
@@ -298,8 +318,19 @@ Rich <- c(FALSE)#,FALSE)
 
 scen_grid_perf <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich)
 
-## sample
+## sample, 100 years
 lh_vec <- lh_info$ShortName
+SigRscen <- c("LowSigmaR")
+Lyears <- c("L100")
+Lsamp <- c("N100")
+Fscen <- c("F1")# ,"F2") #
+res_name <- "results_variable"
+Rich <- c(FALSE)
+
+scen_grid_samplong <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich)
+
+## sample,less than 100 years
+lh_vec <- lh_info$ShortName[1]
 SigRscen <- c("LowSigmaR")
 Lyears <- c("L75","L1")
 Lsamp <- c("N100")
@@ -323,9 +354,10 @@ run_ss(df = scen_grid,
        ncores = ncores)
 end_run <- Sys.time() - start
 
+scen_grid_all <- rbind.data.frame(scen_grid_rich, scen_grid_perf, scen_grid_samplong, scen_grid_samp)
 res_wide <- get_results(mod_path = sim_path, 
-                        df = scen_grid, 
-                        itervec = 1:64, 
+                        df = scen_grid_all, 
+                        itervec = 1:100, 
                         read_truth = FALSE, 
                         Rscen = c("R_unadjusted","R_biasadjusted"),
                         rewrite = TRUE, 
@@ -349,7 +381,10 @@ all_info <- all %>%
   mutate(P25 = estimate - 0.675*sd) %>%
   mutate(P75 = estimate + 0.675*sd) %>%
   mutate(cover = ifelse(true >= P25 & true <= P75, 1, 0)) %>%
-  mutate(scenario = paste0(Nsamp,"_",Lyears,"_",Rich))
+  mutate(scenario = paste0(Nsamp,"_",Lyears,"_",Rich)) %>%
+  mutate(scenario = replace(scenario, grepl(TRUE, scenario), "data-rich"),
+         scenario = replace(scenario, grepl("perfect", scenario), "perfect"))
+all_info$scenario <- sapply(1:length(all_info$scenario), function(x) ifelse(grepl("FALSE",all_info$scenario[x]), strsplit(all_info$scenario[x],"_FALSE")[[1]][1], all_info$scenario[x]))
 
 sum_final <- all_info %>%
   filter(year %in% c(100)) %>%
@@ -359,6 +394,14 @@ sum_final <- all_info %>%
             pconverge = length(which(max_grad <= 1))/length(max_grad),
             pcover = sum(cover, na.rm=TRUE)/length(which(is.na(cover) == FALSE)))
 write.csv(sum_final, file.path(fig_path, "RE_summary.csv"), row.names = FALSE)
+
+sum_final2 <- all_info %>%
+  filter(year %in% c(100)) %>%
+  group_by(lifehistory, Rest, SigmaR, scenario, Fscen, variable, year) %>%
+  summarise(mre = median(re, na.rm = TRUE),
+            mare = median(abs(re), na.rm = TRUE),
+            pconverge = length(which(max_grad <= 1))/length(max_grad),
+            pcover = sum(cover, na.rm=TRUE)/length(which(is.na(cover) == FALSE)))
 
 check_mre <- lapply(1:length(itervec), function(x){
   sub <- all_info %>% filter(year == 100) %>% filter(variable %in% c("Depletion", "F", "SSB")) %>% filter(iteration <= itervec[x])
@@ -391,22 +434,30 @@ pre <- ggplot(check_pre) +
   coord_cartesian(ylim=c(-1,1)) +
   guides(fill = FALSE) +
   theme_bw()
-ggsave(file.path(fig_path, "RE_sampling_LowSigmaR.png"), pre, height = 10, width = 12)
+ggsave(file.path(fig_path, "RE_LowSigmaR.png"), pre, height = 10, width = 18)
 
-check_pret <- all_info %>% filter(variable %in% c("F")) %>% filter(Rest == "R_biasadjusted") %>% filter(year %in% seq(100,1,by=-5))
+check_pret <- all_info %>% filter(variable %in% c("Depletion")) %>% filter(Rest == "R_biasadjusted") %>% filter(year %in% seq(100,1,by=-5))
 # check_pret$Lyears <- factor(check_pret$Lyears, levels = Lyears) #, "L99","L75","L1"
 pret <- ggplot(check_pret) +
   geom_violin( aes(x = factor(year), y = re, fill = lifehistory), scale = "width", draw_quantiles = c(0.25,0.5,0.75)) +
   geom_hline(aes(yintercept = 0), col = 'black') +
-  facet_wrap(lifehistory+Nsamp~variable+Rich, nrow = 4) +
+  facet_wrap(lifehistory~variable+scenario, ncol = 4) +
   xlab("Year") +
   ylab("Relative error") +
   scale_fill_brewer(palette = "Set1") +
   coord_cartesian(ylim=c(-1,1)) + # c(quantile(check_pre$re,0.01,na.rm=TRUE),quantile(check_pre$re,0.99,na.rm=TRUE))) +
   guides(fill = FALSE) +
   theme_bw()
-ggsave(file.path(fig_path, "RE_byYear_sampling_LowSigmaR.png"), pret, height = 14, width = 10)
+ggsave(file.path(fig_path, "RE_byYear_LowSigmaR.png"), pret, height = 14, width = 14)
 
+check_ic <- sum_final2 %>% filter(variable %in% c("F","SPR","SSB","Depletion")) 
+pic <- ggplot(check_ic) +
+  geom_hline(aes(yintercept = 0.5)) +
+  geom_point(aes(x = scenario, y = pcover, color = Rest), cex = 4, alpha = 0.8) +
+  facet_wrap(lifehistory~variable) +
+  ylim(c(0,1)) +
+  theme_bw()
+ggsave(file.path(fig_path, "IC_LowSigmaR.png"), pic, height = 10, width = 18)
 
 
 r3 <- SS_output(file.path(sim_path, "shs","LowSigmaR","1","om"))
