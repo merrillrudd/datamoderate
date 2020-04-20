@@ -1,4 +1,4 @@
-run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest = TRUE, ncores){
+run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest = TRUE, ncores, run_hess = FALSE){
   registerDoParallel(ncores)
   getDoParWorkers()
   for(x in 1:nrow(df)){
@@ -29,7 +29,7 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
       dat <- SS_readdat(file.path(samp_path, "perfect.ss"), version = "3.30", verbose = FALSE)
       if(df[x,"Rich"] == TRUE){
         dat <- sample_index(dat_list = dat, fleets = 1, years = list(1:100), sds_obs = list(0.1))
-        dat <- sample_agecomp(dat_list = dat, fleets = 1, Nsamp = 30, years = list(1:100))
+        dat <- sample_agecomp(dat_list = dat, fleets = 1, Nsamp = 100, years = list(1:100))
       }
       if(df[x,"Rich"] == FALSE){
         dat <- change_data(dat_list = dat, outfile = NULL, years = 1, fleets = 1, types = "index")
@@ -73,9 +73,10 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
       ## first iter, save unadjusted results
       ########################################
       rpath1 <- file.path(lyr_path, "R_unadjusted")
-      dir.create(rpath1, showWarnings = FALSE)
       
       if(file.exists(file.path(rpath1, "Report.sso")) == FALSE | rewrite == TRUE){
+        unlink(rpath1, TRUE)
+        dir.create(rpath1, showWarnings = FALSE)
         copy_ctl <- file.copy(from = file.path(dfile_path, paste0(lh, "EM.ctl")), to = rpath1, overwrite = TRUE)
         copy_dat <- file.copy(from = file.path(samp_path, 'ss3.dat'), to = rpath1, overwrite = TRUE)
         copy_f <- file.copy(from = file.path(dfile_path, "forecast.ss"), to = rpath1, overwrite = TRUE)
@@ -109,11 +110,12 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
         ## last year shf == age 2 (age associated with length at 5% selectivity)
         ## last year shs == age 3 (age associated with length at 5% selectivity)
         ## last year los == age 5 (age associated with length at 5% selectivity)
-        rmyrs <- ifelse(lh == "shs", 3, 
-                        ifelse(lh == "shf", 2,
-                               ifelse(lh == "los", 6,
-                                      ifelse(lh == "lof", 4, NA))))
+        rmyrs <- ifelse(lh == "short_slow", 3, 
+                        ifelse(lh == "short_fast", 2,
+                               ifelse(lh == "long_slow", 6,
+                                      ifelse(lh == "long_fast", 4, NA))))
         ctl$do_recdev <- 1
+        ctl$recdev_early_start <- 1
         ctl$recdev_phase <- 3
         ctl$MainRdevYrFirst <- max(100 - lyears + 1 - dat$Nages,2)
         ctl$MainRdevYrLast <- 100 - rmyrs
@@ -138,21 +140,22 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
         ss_bin <- "ss"
         bin <- get_bin(ss_bin)
         system(paste0(navigate, ";", bin), ignore.stdout = TRUE)
-# 
-#         r1 <- SS_output(rpath1)
-#         d1 <- get_results_derived(r1)
-#         t2 <- SS_output(om_path)
-#         d2 <- get_results_derived(t2)
-#         plot(d2$Value.Bratio)
-#         lines(d1$Value.Bratio)
+
+        # r1 <- SS_output(rpath1)
+        # d1 <- get_results_derived(r1)
+        # t2 <- SS_output(om_path)
+        # d2 <- get_results_derived(t2)
+        # plot(d2$Value.Bratio)
+        # lines(d1$Value.Bratio)
       }
       ########################################
       ## second iter, bias adjustment
       ########################################
       rpath2 <- file.path(lyr_path, "R_biasadjusted")
-      dir.create(rpath2, showWarnings = FALSE)
       
       if(file.exists(file.path(rpath2, "Report.sso")) == FALSE | rewrite == TRUE){
+        unlink(rpath2, TRUE)
+        dir.create(rpath2, showWarnings = FALSE)
         ## copy files 
         copy1 <- file.copy(from = file.path(rpath1, "ss3.dat"), to = rpath2, overwrite = TRUE)
         copy2 <- file.copy(from = file.path(rpath1, "ss3.ctl"), to = rpath2, overwrite = TRUE)
@@ -178,7 +181,15 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
           ss_bin <- "ss"
           
           bin <- get_bin(ss_bin)
-          system(paste0(navigate, ";", bin), ignore.stdout = TRUE)
+          if(run_hess == TRUE) system(paste0(navigate, ";", bin), ignore.stdout = TRUE)
+          if(run_hess == FALSE) system(paste0(navigate, ";", bin, " -nohess"), ignore.stdout = TRUE)
+          
+          r1 <- SS_output(rpath2)
+          d1 <- get_results_derived(r1)
+          t2 <- SS_output(om_path)
+          d2 <- get_results_derived(t2)
+          plot(d2$Value.Bratio)
+          lines(d1$Value.Bratio)
           
           if(itervec[i] == 1){
             out <- r4ss::SS_output(rpath2)
@@ -192,9 +203,10 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
       ########################################
       if(run_noest == TRUE){
       rpath3 <- file.path(lyr_path, "R_noest")
-      dir.create(rpath3, showWarnings = FALSE)
-
+      
       if(file.exists(file.path(rpath3, "Report.sso")) == FALSE | rewrite == TRUE){
+        unlink(rpath3, TRUE)
+        dir.create(rpath3, showWarnings = FALSE)
         ## copy files
         copy1 <- file.copy(from = file.path(rpath2, "ss3.dat"), to = rpath3, overwrite = TRUE)
         copy2 <- file.copy(from = file.path(rpath2, "ss3.ctl"), to = rpath3, overwrite = TRUE)
@@ -213,7 +225,9 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
         ss_bin <- "ss"
 
         bin <- get_bin(ss_bin)
-        system(paste0(navigate, ";", bin), ignore.stdout = TRUE)
+        if(run_hess == TRUE) system(paste0(navigate, ";", bin), ignore.stdout = TRUE)
+        if(run_hess == FALSE) system(paste0(navigate, ";", bin, " -nohess"), ignore.stdout = TRUE)
+        
       }
       }
     }

@@ -8,26 +8,19 @@
 #' @param rewrite TRUE will rewrite file if already written
 #' @return data frame of results
 #' @author Merrill Rudd
-get_results <- function(mod_path, df, itervec, read_truth, Rscen = NULL, rewrite = TRUE, res_name){
-  
-  # if(read_truth == TRUE){
-  #   name <- "simulated_values.csv"
-  #   if(all(is.null(Rscen)) == FALSE) warning("reading true values, replacing Rscen input with om")
-  #   Rscen <- "om"
-  # }
-  # if(read_truth == FALSE){
-  #   name <- "results.csv"
-  #   if(all(is.null(Rscen))) stop("please specify recruitment estimation scenarios to read report files")
-  # }
-  # 
+get_results <- function(mod_path, df, itervec, read_truth, Rscen = NULL, res_name = NULL){
+
+  out_dir <- file.path(mod_path, "results")
+  dir.create(out_dir, showWarnings = FALSE)
   res <- lapply(1:nrow(df), function(x){
+
+    
     lh <- df[x,"LifeHistory"]
     f <- df[x,"F"]
     sig <- df[x,"SigmaR"]
     
     path <- file.path(mod_path, lh, f, sig)
     
-    if(file.exists(file.path(mod_path, paste0(res_name, ".csv")))==FALSE | rewrite == TRUE){
       byIter <-  foreach(y = 1:length(itervec), .packages = c("tidyverse","r4ss")) %dopar%{
 
         if(read_truth == FALSE){
@@ -44,7 +37,7 @@ get_results <- function(mod_path, df, itervec, read_truth, Rscen = NULL, rewrite
         byR <- lapply(1:length(Rscen), function(z){
           
           if(file.exists(file.path(res_dir, Rscen[z], "Report.sso"))){
-            r1 <- r4ss::SS_output(file.path(res_dir, Rscen[z]), verbose = FALSE, printstats = FALSE)
+            r1 <- r4ss::SS_output(file.path(res_dir, Rscen[z]), verbose = FALSE, printstats = FALSE, hidewarn = TRUE)
             
             d1 <- get_results_derived(r1)
             s1 <- get_results_scalar(r1)
@@ -128,12 +121,9 @@ get_results <- function(mod_path, df, itervec, read_truth, Rscen = NULL, rewrite
         return(out2)
       }
       byIter <- do.call(rbind, byIter)
-      write.csv(byIter, file.path(mod_path, paste0(res_name, ".csv")), row.names = FALSE)
-    } else {
-      byIter <- read.csv(file.path(mod_path, paste0(res_name, ".csv")), stringsAsFactors = FALSE)
-    }
     return(byIter)
   })
   out <- do.call(rbind, res)
+  if(is.null(res_name) == FALSE) write.csv(out, file.path(out_dir, paste0(res_name,".csv")), row.names = FALSE)
   return(out)
 }
