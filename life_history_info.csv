@@ -1,0 +1,5 @@
+"Longevity","Growth","Amax","M","Linf","k","t0","M/k","Name","Fmsy","MSY"
+"Shorter","Slower",30,0.18,55,0.17,-1,1.05882352941176,"LiveShorter_GrowSlower",0.16,2391.65
+"Shorter","Faster",30,0.18,55,0.3,-1,0.6,"LiveShorter_GrowFaster",0.17,4347.18
+"Longer","Slower",60,0.09,55,0.088,-1,1.02272727272727,"LiveLonger_GrowSlower",0.08,2757.72
+"Longer","Faster",60,0.09,55,0.15,-1,0.6,"LiveLonger_GrowFaster",0.08,4763.51
