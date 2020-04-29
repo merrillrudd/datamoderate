@@ -167,8 +167,8 @@
 #
 #_Q_parms(if_any);Qunits_are_ln(q)
 #_          LO            HI          INIT         PRIOR         PR_SD       PR_type      PHASE    env-var    use_dev   dev_mnyr   dev_mxyr     dev_PH      Block    Blk_Fxn  #  parm_name
-           -20            20             0             0            99             0          5          0          0          0          0          0          0          0  #  LnQ_base_Fishery(1)
-           -20            20             0             0            99             0          5          0          0          0          0          0          0          0  #  LnQ_base_Survey(2)
+           -20            20             0             0            99             0          -5          0          0          0          0          0          0          0  #  LnQ_base_Fishery(1)
+           -20            20             0             0            99             0          -5          0          0          0          0          0          0          0  #  LnQ_base_Survey(2)
 #_no timevary Q parameters
 #
 #_size_selex_patterns
@@ -222,9 +222,9 @@
            -15             5          -999          -999          0.05             0        -99          0          0          0          0          0          0          0  #  SizeSel_P5_Fishery(1)
             -5          1000           999           999          0.05             0        -99          0          0          0          0          0          0          0  #  SizeSel_P6_Fishery(1)
 # 2   Survey LenSelex
-          5.08         101.6          42          42          0.05             0          2          0          0          0          0          0          0          0  #  SizeSel_P1_Fishery(1)
+          5.08         101.6          42          42          0.05             0          -2          0          0          0          0          0          0          0  #  SizeSel_P1_Fishery(1)
             -5             3            -3            -3          0.05             0        -99          0          0          0          0          0          0          0  #  SizeSel_P2_Fishery(1)
-             0          25.5           5.1           5.1          0.05             0          3          0          0          0          0          0          0          0  #  SizeSel_P3_Fishery(1)
+             0          25.5           5.1           5.1          0.05             0          -3          0          0          0          0          0          0          0  #  SizeSel_P3_Fishery(1)
             -2            16            15            15          0.05             0        -99          0          0          0          0          0          0          0  #  SizeSel_P4_Fishery(1)
            -15             5          -999          -999          0.05             0        -99          0          0          0          0          0          0          0  #  SizeSel_P5_Fishery(1)
             -5          1000           999           999          0.05             0        -99          0          0          0          0          0          0          0  #  SizeSel_P6_Fishery(1)

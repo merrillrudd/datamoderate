@@ -115,9 +115,9 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
                                ifelse(lh == "long_slow", 6,
                                       ifelse(lh == "long_fast", 4, NA))))
         ctl$do_recdev <- 1
-        ctl$recdev_early_start <- 1
+        ctl$recdev_early_start <- -29
         ctl$recdev_phase <- 3
-        ctl$MainRdevYrFirst <- max(100 - lyears + 1 - dat$Nages,2)
+        ctl$MainRdevYrFirst <- max(100 - lyears + 1 - dat$Nages,1)
         ctl$MainRdevYrLast <- 100 - rmyrs
         
         ctl$size_selex_parms[1,"LO"] <- 11.5
@@ -145,8 +145,8 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
         # d1 <- get_results_derived(r1)
         # t2 <- SS_output(om_path)
         # d2 <- get_results_derived(t2)
-        # plot(d2$Value.Bratio)
-        # lines(d1$Value.Bratio)
+        # plot(d2$Value.SSB[1:100])
+        # lines(d1$Value.SSB[1:100])
       }
       ########################################
       ## second iter, bias adjustment
@@ -183,13 +183,13 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
           bin <- get_bin(ss_bin)
           if(run_hess == TRUE) system(paste0(navigate, ";", bin), ignore.stdout = TRUE)
           if(run_hess == FALSE) system(paste0(navigate, ";", bin, " -nohess"), ignore.stdout = TRUE)
-          
-          r1 <- SS_output(rpath2)
-          d1 <- get_results_derived(r1)
-          t2 <- SS_output(om_path)
-          d2 <- get_results_derived(t2)
-          plot(d2$Value.Bratio)
-          lines(d1$Value.Bratio)
+
+          # r1 <- SS_output(rpath2)
+          # d1 <- get_results_derived(r1)
+          # t2 <- SS_output(om_path)
+          # d2 <- get_results_derived(t2)
+          # plot(d2$Value.SSB[1:100])
+          # lines(d1$Value.SSB[1:100])
           
           if(itervec[i] == 1){
             out <- r4ss::SS_output(rpath2)

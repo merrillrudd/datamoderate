@@ -33,8 +33,9 @@ simulate_pop <- function(df, path, itervec, f_list, lh_df, ncores = 1, rewrite){
       copy_s <- file.copy(from = file.path(dfile_path, "starter.ss"), to = om_path, overwrite = TRUE)
       
       dat1 <- SS_readdat(file.path(om_path, paste0(lh,"OM.dat")), verbose = FALSE)
+      ctl1 <- SS_readctl(file.path(om_path, paste0(lh, "OM.ctl")), use_datlist = TRUE, datlist = dat1, verbose = FALSE)
       for1 <- SS_readforecast(file.path(om_path, "forecast.ss"), verbose = FALSE)
-      xyears <- seq(dat1$styr, dat1$endyr+for1$Nforecastyrs)
+      xyears <- seq(ctl1$recdev_early_start, dat1$endyr+for1$Nforecastyrs)
       devs <- setNames(dev_mat[,i], xyears)
       change_rec_devs(recdevs = devs, ctl_file_in = file.path(om_path, paste0(lh, "OM.ctl")), ctl_file_out = file.path(om_path, paste0(lh,"OM.ctl")))
 
