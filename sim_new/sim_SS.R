@@ -325,7 +325,6 @@ res_wide <- get_results(mod_path = sim_path,
                         itervec = itervec, 
                         read_truth = FALSE, 
                         Rscen = c("R_unadjusted","R_biasadjusted"),
-<<<<<<< HEAD
                         res_name = paste0(res_name, "_wide"),
                         ncores = 14)
 saveOFL <- res_wide %>% 
@@ -352,28 +351,6 @@ all <- left_join(res, true, join_by = c(year, lifehistory, iteration, SigmaR, va
 all_info <- all %>% 
   mutate(re = (estimate - true)/true)
 
-=======
-                        res_name = paste0(res_name, "_wide"))
-
-res_long_all <- res_wide %>%
-  pivot_longer(-c(iteration, lifehistory, year, max_grad, SigmaR, Rest, Rich, Lyears, Nsamp, Fscen, LN_R0), names_to = "variable", values_to = "estimate")
-
-res_long_mle <- res_long_all %>% filter(grepl("_sd", variable) == FALSE)
-res_long_sd <- res_long_all %>% filter(grepl("_sd", variable)) %>% 
-  rename(sd = estimate) %>%
-  separate(col = variable, into = c("variable", "rm"), sep = "_") %>%
-  select(-rm)
-res_long <- full_join(res_long_mle, res_long_sd)
-
-write.csv(res_long, file.path(sim_path, "results", paste0(res_name, "_long.csv")), row.names = FALSE)
-
-true <- read.csv(file.path(sim_path, "results", "sim_variable_long.csv")) %>% select(-Rest)
-res <- read.csv(file.path(sim_path, "results", paste0(res_name, "_long.csv"))) %>% select(-Rich)
-all <- left_join(res, true, join_by = c(year, lifehistory, iteration, SigmaR, variable))
-all_info <- all %>% 
-  mutate(re = (estimate - true)/true)
-
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 sum_final <- all_info %>%
   filter(year %in% c(100)) %>%
   group_by(lifehistory, Rest, SigmaR, Lyears, Nsamp, variable, year) %>%
@@ -386,12 +363,8 @@ check <- all_info %>%
   filter(variable %in% c("Recruit","F","SSB","Depletion")) %>% 
   select(-c(sd,re)) %>%
   pivot_longer(cols=c(estimate,true), names_to = "model", values_to = "value") %>%
-<<<<<<< HEAD
   filter(iteration == 1) %>%
   filter(year <= 100)
-=======
-  filter(iteration == 1)
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 p_rich_check <- ggplot(check) +
   geom_line(aes(x = year, y = value, color = model, linetype = model), lwd = 2) +
   facet_wrap(lifehistory~variable, scales ="free_y", nrow = 4) +
@@ -438,7 +411,6 @@ res_name <- "results_variable_perfect"
 Rich <- c(FALSE)
 
 scen_grid <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich)
-<<<<<<< HEAD
 
 # for(x in 1:nrow(scen_grid)){
 #   for(y in 1:length(itervec)){
@@ -476,30 +448,6 @@ saveOFL <- res_wide %>%
 res_long_all <- res_wide %>%
   select(-c(OFL,OFL_sd)) %>%
   left_join(saveOFL) %>%
-=======
-ncores <- 14
-itervec <- 1:100
-rewrite = FALSE
-start <- Sys.time()
-run_ss(df = scen_grid, 
-       path = sim_path, 
-       itervec = itervec,
-       clean = FALSE, 
-       rewrite = rewrite, 
-       run_noest = FALSE, 
-       run_hess = FALSE,
-       ncores = ncores)
-end_run <- Sys.time() - start
-
-res_wide <- get_results(mod_path = sim_path, 
-                        df = scen_grid, 
-                        itervec = itervec, 
-                        read_truth = FALSE, 
-                        Rscen = c("R_unadjusted","R_biasadjusted"),
-                        res_name = paste0(res_name, "_wide"))
-
-res_long_all <- res_wide %>%
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
   pivot_longer(-c(iteration, lifehistory, year, max_grad, SigmaR, Rest, Rich, Lyears, Nsamp, Fscen, LN_R0), names_to = "variable", values_to = "estimate")
 
 res_long_mle <- res_long_all %>% filter(grepl("_sd", variable) == FALSE)
@@ -529,23 +477,15 @@ check <- all_info %>%
   filter(variable %in% c("Recruit","F","SSB","Depletion")) %>% 
   select(-c(sd,re)) %>%
   pivot_longer(cols=c(estimate,true), names_to = "model", values_to = "value") %>%
-<<<<<<< HEAD
   filter(iteration == 1) %>%
   filter(SigmaR == "HighSigmaR") %>%
   filter(year <= 100)
-=======
-  filter(iteration == 1)
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 p_perf_check <- ggplot(check) +
   geom_line(aes(x = year, y = value, color = model, linetype = model), lwd = 2) +
   facet_wrap(lifehistory~variable, scales ="free_y", nrow = 4) +
   theme_bw(base_size = 14)
 
-<<<<<<< HEAD
 check <- all_info %>% filter(SigmaR == "HighSigmaR") %>% filter(variable %in% c("F","SPR","SSB","Depletion","SSB0")) %>% filter(year == 100) %>% filter(Rest == "R_biasadjusted")
-=======
-check <- all_info %>% filter(variable %in% c("F","SPR","SSB","Depletion","SSB0")) %>% filter(year == 100) %>% filter(Rest == "R_biasadjusted")
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 check$variable <- factor(check$variable, levels = c("F","SPR","SSB","Depletion","SSB0"))
 pre_perf <- ggplot(check) +
   geom_violin( aes(x = lifehistory, y = re, fill = lifehistory), scale = "width", draw_quantiles = c(0.25,0.5,0.75)) +
@@ -563,13 +503,8 @@ pre_perf <- ggplot(check) +
 ########################
 ########################
 ## average sample
-<<<<<<< HEAD
 lh_vec <- lh_info$ShortName
 SigRscen <- c("LowSigmaR","HighSigmaR")
-=======
-lh_vec <- c("short_fast","long_fast") #lh_info$ShortName
-SigRscen <- c("LowSigmaR")
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 Lyears <- c("L75","L20","L10","L1")
 Lsamp <- c("N200")
 Fscen <- c("F1")
@@ -577,17 +512,6 @@ res_name <- "results_variable_avgsample"
 Rich <- c(FALSE)
 
 scen_grid <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich)
-<<<<<<< HEAD
-=======
-
-ignore <- lapply(1:nrow(scen_grid), function(x){
-  byIter <- lapply(1:length(itervec), function(y){
-    path <- file.path(sim_path, scen_grid[x,"LifeHistory"], scen_grid[x,"F"], scen_grid[x,"SigmaR"], itervec[y])
-    xx <- file.rename(from = file.path(path, scen_grid[x,"Samp"]), to = file.path(path, paste0(scen_grid[x,"Samp"],"_estLH")))
-  })
-})
-
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 
 ncores <- 14
 itervec <- 1:100
@@ -608,7 +532,6 @@ res_wide <- get_results(mod_path = sim_path,
                         itervec = itervec, 
                         read_truth = FALSE, 
                         Rscen = c("R_unadjusted","R_biasadjusted"),
-<<<<<<< HEAD
                         res_name = paste0(res_name, "_wide"),
                         ncores = 14)
 saveOFL <- res_wide %>% 
@@ -618,11 +541,6 @@ saveOFL <- res_wide %>%
 res_long_all <- res_wide %>%
   select(-c(OFL,OFL_sd)) %>%
   left_join(saveOFL) %>%
-=======
-                        res_name = paste0(res_name, "_wide"))
-
-res_long_all <- res_wide %>%
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
   pivot_longer(-c(iteration, lifehistory, year, max_grad, SigmaR, Rest, Rich, Lyears, Nsamp, Fscen, LN_R0), names_to = "variable", values_to = "estimate")
 
 res_long_mle <- res_long_all %>% filter(grepl("_sd", variable) == FALSE)
@@ -652,7 +570,6 @@ sum_final <- all_info %>%
   summarise(mre = median(re, na.rm = TRUE),
             mare = median(abs(re), na.rm = TRUE),
             pconverge = length(unique(c(which(max_grad <= 1), which(LN_R0<12))))/length(max_grad))
-<<<<<<< HEAD
 write.csv(sum_final, file.path(fig_path, "RE_summary_avgsampling.csv"))
 
 check <- all_info %>% 
@@ -663,26 +580,12 @@ check <- all_info %>%
   filter(Rest == "R_biasadjusted") %>%
   filter(year <= 100) %>%
   filter(SigmaR == "HighSigmaR")
-=======
-write.csv(sum_final, file.path(fig_path, "RE_summary_sampling.csv"))
-
-check <- all_info %>% 
-  filter(variable %in% c("Recruit","F","SSB","Depletion")) %>% 
-  select(-c(sd,re)) %>%
-  pivot_longer(cols=c(estimate,true), names_to = "model", values_to = "value") %>%
-  filter(iteration == 1) %>%
-  filter(Rest == "R_biasadjusted")
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 p_samp_check <- ggplot(check) +
   geom_line(aes(x = year, y = value, color = model, linetype = model), lwd = 2) +
   facet_wrap(lifehistory~variable+Lyears, scales ="free_y", nrow = 4) +
   theme_bw(base_size = 14)
 
-<<<<<<< HEAD
 check <- all_info %>% filter(SigmaR == "HighSigmaR") %>% filter(variable %in% c("F","SPR","SSB","Depletion","SSB0")) %>% filter(year == 100) %>% filter(Rest == "R_biasadjusted")
-=======
-check <- all_info %>% filter(variable %in% c("F","SPR","SSB","Depletion","SSB0")) %>% filter(year == 100) %>% filter(Rest == "R_biasadjusted")
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 check$variable <- factor(check$variable, levels = c("F","SPR","SSB","Depletion","SSB0"))
 pre_samp <- ggplot(check) +
   geom_violin( aes(x = Lyears, y = re, fill = lifehistory), scale = "width", draw_quantiles = c(0.25,0.5,0.75)) +
@@ -694,7 +597,7 @@ pre_samp <- ggplot(check) +
   coord_cartesian(ylim=c(quantile(check$re, 0.001), 5)) +
   guides(fill = FALSE) +
   theme_bw()
-<<<<<<< HEAD
+
 
 ######################
 ## low sample
@@ -743,52 +646,6 @@ res_long_sd <- res_long_all %>% filter(grepl("_sd", variable)) %>%
   separate(col = variable, into = c("variable", "rm"), sep = "_") %>%
   select(-rm)
 res_long <- full_join(res_long_mle, res_long_sd)
-
-=======
-
-######################
-## low sample
-lh_vec <- lh_info$ShortName
-SigRscen <- c("LowSigmaR")
-Lyears <- c("L75","L20","L10","L1")
-Lsamp <- c("N50")
-Fscen <- c("F1")
-res_name <- "results_variable_lowsample"
-Rich <- c(FALSE)
-
-scen_grid <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich)
-ncores <- 14
-itervec <- 1:100
-rewrite = FALSE
-start <- Sys.time()
-run_ss(df = scen_grid, 
-       path = sim_path, 
-       itervec = itervec,
-       clean = FALSE, 
-       rewrite = rewrite, 
-       run_noest = FALSE, 
-       run_hess = FALSE,
-       ncores = ncores)
-end_run <- Sys.time() - start
-
-res_wide <- get_results(mod_path = sim_path, 
-                        df = scen_grid, 
-                        itervec = itervec, 
-                        read_truth = FALSE, 
-                        Rscen = c("R_unadjusted","R_biasadjusted"),
-                        res_name = paste0(res_name, "_wide"))
-
-res_long_all <- res_wide %>%
-  pivot_longer(-c(iteration, lifehistory, year, max_grad, SigmaR, Rest, Rich, Lyears, Nsamp, Fscen, LN_R0), names_to = "variable", values_to = "estimate")
-
-res_long_mle <- res_long_all %>% filter(grepl("_sd", variable) == FALSE)
-res_long_sd <- res_long_all %>% filter(grepl("_sd", variable)) %>% 
-  rename(sd = estimate) %>%
-  separate(col = variable, into = c("variable", "rm"), sep = "_") %>%
-  select(-rm)
-res_long <- full_join(res_long_mle, res_long_sd)
-
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 write.csv(res_long, file.path(sim_path, "results", paste0(res_name, "_long.csv")), row.names = FALSE)
 
 true <- read.csv(file.path(sim_path, "results", "sim_variable_long.csv")) %>% select(-Rest)
@@ -809,33 +666,22 @@ sum_final <- all_info %>%
   summarise(mre = median(re, na.rm = TRUE),
             mare = median(abs(re), na.rm = TRUE),
             pconverge = length(unique(c(which(max_grad <= 1), which(LN_R0<12))))/length(max_grad))
-<<<<<<< HEAD
 write.csv(sum_final, file.path(fig_path, "RE_summary_lowsampling.csv"))
-=======
-write.csv(sum_final, file.path(fig_path, "RE_summary_sampling.csv"))
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 
 check <- all_info %>% 
   filter(variable %in% c("Recruit","F","SSB","Depletion")) %>% 
   select(-c(sd,re)) %>%
   pivot_longer(cols=c(estimate,true), names_to = "model", values_to = "value") %>%
   filter(iteration == 1) %>%
-<<<<<<< HEAD
   filter(Rest == "R_biasadjusted") %>%
   filter(SigmaR == "HighSigmaR")
-=======
-  filter(Rest == "R_biasadjusted")
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 p_samp_check <- ggplot(check) +
   geom_line(aes(x = year, y = value, color = model, linetype = model), lwd = 2) +
   facet_wrap(lifehistory~variable+Lyears, scales ="free_y", nrow = 4) +
   theme_bw(base_size = 14)
 
-<<<<<<< HEAD
+
 check <- all_info %>% filter(SigmaR == "HighSigmaR") %>% filter(variable %in% c("F","SPR","SSB","Depletion","SSB0")) %>% filter(year == 100) %>% filter(Rest == "R_biasadjusted")
-=======
-check <- all_info %>% filter(variable %in% c("F","SPR","SSB","Depletion","SSB0")) %>% filter(year == 100) %>% filter(Rest == "R_biasadjusted")
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 check$variable <- factor(check$variable, levels = c("F","SPR","SSB","Depletion","SSB0"))
 pre_samp <- ggplot(check) +
   geom_violin( aes(x = Lyears, y = re, fill = lifehistory), scale = "width", draw_quantiles = c(0.25,0.5,0.75)) +
@@ -848,7 +694,7 @@ pre_samp <- ggplot(check) +
   guides(fill = FALSE) +
   theme_bw()
 
-<<<<<<< HEAD
+
 ######################
 ## sample decline
 lh_vec <- lh_info$ShortName
@@ -899,14 +745,11 @@ res_long_sd <- res_long_all %>% filter(grepl("_sd", variable)) %>%
 res_long <- full_join(res_long_mle, res_long_sd)
 
 write.csv(res_long, file.path(sim_path, "results", paste0(res_name, "_long.csv")), row.names = FALSE)
-=======
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 
 ############################################
 ## READ ALL
 ############################################
 true <- read.csv(file.path(sim_path, "results", "sim_variable_long.csv")) %>% select(-Rest)
-<<<<<<< HEAD
 resr <- read.csv(file.path(sim_path, "results", "results_variable_rich_long.csv"))
 resp <- read.csv(file.path(sim_path, "results", "results_variable_perfect_long.csv"))
 ress <- read.csv(file.path(sim_path, "results", "results_variable_avgsample_long.csv"))
@@ -915,21 +758,12 @@ ress3 <- read.csv(file.path(sim_path, "results", "results_variable_sampledecline
 res <- rbind.data.frame(resr, resp, ress, ress2, ress3)
 all <- left_join(res, true, join_by = c(year, lifehistory, iteration, SigmaR, variable))
 all$lifehistory <- as.character(all$lifehistory)
-=======
-# resr <- read.csv(file.path(sim_path, "results", "results_variable_rich_long.csv"))
-resp <- read.csv(file.path(sim_path, "results", "results_variable_perfect_long.csv"))
-ress <- read.csv(file.path(sim_path, "results", "results_variable_sample_long.csv"))
-ress2 <- read.csv(file.path(sim_path, "results", "results_variable_lowsample_long.csv"))
-res <- full_join(resp,ress)
-res <- full_join(res, ress2)
-all <- left_join(res, true, join_by = c(year, lifehistory, iteration, SigmaR, variable))
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
+
 all_info <- all %>% 
   mutate(re = (estimate - true)/true) %>%
   mutate(label = ifelse(Rich == TRUE, 'data-rich',
                         ifelse(Rich == FALSE & Nsamp == "perfect", "perfect",
                                paste0(Lyears,"_", Nsamp)))) %>%
-<<<<<<< HEAD
   mutate(converge = ifelse(max_grad > 1 | LN_R0 > 12, 0, 1),
          variable = replace(variable, variable == "Depletion", "Fraction of unfished")) %>%
   mutate(longevity = ifelse(grepl("short_",lifehistory), "Short-lived", "Long-lived")) %>%
@@ -937,17 +771,10 @@ all_info <- all %>%
 labels <- unique(all_info$label)
 saveRDS(all_info, file.path(sim_path, "results", "results_together.rds"))
 
-all_info <- readRDS(file.path(sim_path, "results", "results_together.rds"))
-=======
-  mutate(converge = ifelse(max_grad > 1 | LN_R0 > 12, 0, 1))
-labels <- unique(all_info$label)
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
-
 sum_converge <- unique(all_info %>% 
                          filter(year == 100) %>%
                          select(iteration, lifehistory, Rest, SigmaR, Lyears, Nsamp, max_grad, LN_R0, label, converge)) %>%
   group_by(lifehistory, Rest, SigmaR, Lyears, Nsamp) %>%
-<<<<<<< HEAD
   summarise(n_nonconverge = length(which(converge == 0)))
 
 sum_re1 <- unique(all_info %>% 
@@ -957,9 +784,6 @@ sum_re1 <- unique(all_info %>%
   group_by(lifehistory, Rest, SigmaR, Lyears, Nsamp, label) %>%
   summarise(n_re1 = length(which(abs(re)>1)))
 write.csv(sum_re1, file.path(fig_path, "N_RE_greater_than_1.csv"))
-=======
-  summarise(pconverge = sum(converge)/length(converge))
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 
 sum_final <- all_info %>%
   filter(converge == 1) %>%
@@ -970,7 +794,7 @@ sum_final <- all_info %>%
   left_join(sum_converge)
 write.csv(sum_final, file.path(fig_path, "RE_summary_all.csv"))
 
-<<<<<<< HEAD
+
 # check <- all_info %>% 
 #   filter(variable %in% c("Recruit","F","SSB","Depletion")) %>% 
 #   select(-c(sd,re)) %>%
@@ -1097,41 +921,17 @@ vars <- c("SSB0", "SSB","Fraction of unfished","OFL")
 check <- all_info %>% filter(SigmaR == "LowSigmaR") %>% filter(Nsamp %in% c("perfect","N200")) %>% filter(variable %in% vars) %>% filter(converge == 1) %>% filter(year == 100) %>% filter(Rest == "R_biasadjusted")
 check$variable <- factor(check$variable, levels = vars)
 labels <- as.character(unique(check$label))
-=======
-check <- all_info %>% 
-  filter(variable %in% c("Recruit","F","SSB","Depletion")) %>% 
-  select(-c(sd,re)) %>%
-  pivot_longer(cols=c(estimate,true), names_to = "model", values_to = "value") %>%
-  filter(iteration == 1) %>%
-  filter(lifehistory == "short_fast") %>%
-  filter(Rest == "R_biasadjusted")
-check$label <- factor(check$label, levels = labels)
-p_samp_check <- ggplot(check) +
-  geom_line(aes(x = year, y = value, color = model, linetype = model), lwd = 2) +
-  facet_wrap(lifehistory~variable+label, scales ="free_y", nrow = 4) +
-  theme_bw(base_size = 14)
-ggsave(file.path(fig_path, "Check_iter_example.png"), p_samp_check, height = 10, width = 12)
-
-
-check <- all_info %>% filter(variable %in% c("F","SPR","SSB","Depletion","SSB0")) %>% filter(converge == 1) %>% filter(year == 100) %>% filter(Rest == "R_biasadjusted")
-check$variable <- factor(check$variable, levels = c("F","SPR","SSB","Depletion","SSB0"))
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 check$label <- factor(check$label, levels = labels)
 pre_samp <- ggplot(check) +
   geom_hline(aes(yintercept = 0), lwd = 1) +
   geom_violin( aes(x = label, y = re, fill = lifehistory), scale = "width", draw_quantiles = c(0.25,0.5,0.75)) +
-<<<<<<< HEAD
   facet_grid(longevity+growth~variable) +
-=======
-  facet_wrap(lifehistory~variable, nrow = 4) +
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
   xlab("Sampling") +
   ylab("Relative error") +
   scale_fill_brewer(palette = "Set1") +
   coord_cartesian(ylim=c(quantile(check$re, 0.001), quantile(check$re,0.999))) +
   scale_x_discrete(name = "Sampling", labels = str_replace(labels,"_","\n")) +
   guides(fill = FALSE) +
-<<<<<<< HEAD
   theme_bw(base_size = 24)
 ggsave(file.path(fig_path, "RE_LowSigmaR_N200.png"), pre_samp, height = 10, width = 18)
 
@@ -1262,18 +1062,6 @@ check <- all_info %>% filter(Nsamp == "N200") %>%
   filter(year %in% seq(100,1,by = -5)) 
 labels <- as.character(unique(check$label))
 check$label <- factor(check$label, levels = labels)
-=======
-  theme_bw()
-ggsave(file.path(fig_path, "RE_LowSigmaR.png"), pre_samp, height = 10, width = 12)
-
-check <- all_info %>% filter(variable %in% c("F","SPR","SSB","Depletion","SSB0")) %>% 
-  filter(converge == 1) %>% 
-  filter(Rest == "R_biasadjusted") %>% 
-  filter(year %in% seq(100,1,by = -5)) %>%
-  filter(variable == "Depletion")
-check$variable <- factor(check$variable, levels = c("F","SPR","SSB","Depletion","SSB0"))
-check$label <- factor(check$label, levels = c("data-rich", "perfect", "L75_N200", "L1_N200"))
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 pret <- ggplot(check) +
   geom_hline(aes(yintercept = 0)) +
   geom_violin( aes(x = factor(year), y = re, fill = lifehistory), scale = "width", draw_quantiles = c(0.25,0.5,0.75)) +
@@ -1284,7 +1072,6 @@ pret <- ggplot(check) +
   coord_cartesian(ylim=c(quantile(check$re, 0.001), quantile(check$re, 0.999))) +
   guides(fill = FALSE) +
   theme_bw()
-<<<<<<< HEAD
 ggsave(file.path(fig_path, "RE_byYear_Depletion_LowSigmaR_N200.png"), pret, height = 10, width = 18)
 
 ### 20 years
@@ -1337,8 +1124,6 @@ prest <- ggplot(check) +
   guides(fill = FALSE) +
   theme_bw(base_size = 14)
 ggsave(file.path(fig_path, "RE_byRec_Depletion_LowSigmaR_N200.png"), prest, height = 10, width = 14)
-=======
-ggsave(file.path(fig_path, "RE_byYear_Depletion_LowSigmaR.png"), pret, height = 10, width = 12)
 
 check <- all_info %>% filter(variable %in% c("F","SPR","SSB","Depletion","SSB0")) %>% 
   filter(converge == 1) %>% 
@@ -1360,8 +1145,6 @@ pret <- ggplot(check) +
 ggsave(file.path(fig_path, "RE_byYear_F_LowSigmaR.png"), pret, height = 10, width = 12)
 
 
-
->>>>>>> 55bc05ec56bf8829e2da85de7798c78106c2dc26
 
 ###########################
 ### Pull data
