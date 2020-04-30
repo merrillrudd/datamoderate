@@ -111,8 +111,6 @@ scen_grid <- expand.grid("LifeHistory" = lh_vec,
 						"C" = cyears_vec,
 						"L" = lyears_vec)
 
-# scen_grid <- scen_grid[rev(order(scen_grid$LifeHistory)),]
-
 itervec <- 1:50
 rewrite = FALSE
 
@@ -144,13 +142,14 @@ lime_res <- foreach(x=1:nrow(scen_grid), .packages=c('tidyverse')) %dopar%{
   byIter <- lapply(1:length(itervec), function(ii){
   # byIter <- foreach(ii=1:length(itervec), .export = c("itervec","scen_grid","rewrite"), .packages=c('tidyverse')) %dopar%{
   	
-	lime_path <- "C:\\merrill\\LIME"
 
+	lime_path <- "C:\\merrill\\LIME"
 	devtools::load_all(path = lime_path)
 
 
   	ipath <- file.path(samp_dir, itervec[ii])
   	dir.create(ipath, showWarnings = FALSE)
+
   	
   	cyr_dir <- file.path(ipath, scen_grid[x,"C"])
   	dir.create(cyr_dir, showWarnings = FALSE)
@@ -239,7 +238,9 @@ lime_res <- foreach(x=1:nrow(scen_grid), .packages=c('tidyverse')) %dopar%{
 							derive_quants=TRUE, 
 							est_rdev_t = est_rdev_t_inp,
 							SigRpen = SigRpen,
+							Fpen = Fpen,
 							fix_more = "log_sigma_R")
+
 			# end_mod <- Sys.time() - start
 
 			# t1 <- true %>% filter(iteration == 1) %>% filter(lifehistory == as.character(lh))
@@ -282,7 +283,7 @@ re <- lapply(1:nrow(scen_grid), function(x){
 		
 		plot(truth$Recruit)
 		lines(res$Report$R_t)
-		
+	
 	})
 })
 
