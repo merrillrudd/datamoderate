@@ -6,13 +6,18 @@
 #' @param read_truth FALSE to read estimation results, TRUE to read simulation results
 #' @param Rscen default NULL, must specify recruitment estimation folder names when read_truth = FALSE, otherwise will look to om folder
 #' @param rewrite TRUE will rewrite file if already written
+#' @param ncores default = 1
 #' @return data frame of results
 #' @author Merrill Rudd
-get_results <- function(mod_path, df, itervec, read_truth, Rscen = NULL, res_name = NULL){
+get_results <- function(mod_path, df, itervec, read_truth, Rscen = NULL, res_name = NULL, ncores = 1){
 
   out_dir <- file.path(mod_path, "results")
   dir.create(out_dir, showWarnings = FALSE)
+  
+  registerDoParallel(ncores)
+  getDoParWorkers()
   res <- lapply(1:nrow(df), function(x){
+  # res <- for(x in 1:nrow(df)){
 
     
     lh <- df[x,"LifeHistory"]
@@ -21,6 +26,7 @@ get_results <- function(mod_path, df, itervec, read_truth, Rscen = NULL, res_nam
     
     path <- file.path(mod_path, lh, f, sig)
     
+      # byIter <- for(y in 1:length(itervec)){
       byIter <-  foreach(y = 1:length(itervec), .packages = c("tidyverse","r4ss")) %dopar%{
 
         if(read_truth == FALSE){
@@ -35,12 +41,13 @@ get_results <- function(mod_path, df, itervec, read_truth, Rscen = NULL, res_nam
           res_dir <- file.path(path, itervec[y])
         }
         byR <- lapply(1:length(Rscen), function(z){
+        # for(z in 1:length(Rscen)){
           
           if(file.exists(file.path(res_dir, Rscen[z], "Report.sso"))){
             r1 <- r4ss::SS_output(file.path(res_dir, Rscen[z]), verbose = FALSE, printstats = FALSE, hidewarn = TRUE)
             
             d1 <- get_results_derived(r1)
-            s1 <- get_results_scalar(r1)
+            # s1 <- get_results_scalar(r1)
             
             if(any(grepl("StdDev", colnames(d1)))){
               d2 <- d1 %>% 
@@ -54,8 +61,10 @@ get_results <- function(mod_path, df, itervec, read_truth, Rscen = NULL, res_nam
                        F = Value.F,
                        F_sd = StdDev.F,
                        Depletion = Value.Bratio,
-                       Depletion_sd = StdDev.Bratio) %>%
-                select(year, SSB, SSB_sd, Recruit, Recruit_sd, SPR, SPR_sd, F, F_sd, Depletion, Depletion_sd)
+                       Depletion_sd = StdDev.Bratio,
+                       OFL = Value.OFLCatch,
+                       OFL_sd = StdDev.OFLCatch) %>%
+                select(year, SSB, SSB_sd, Recruit, Recruit_sd, SPR, SPR_sd, F, F_sd, Depletion, Depletion_sd, OFL, OFL_sd)
             } else {
               d2 <- d1 %>% 
                 rename(year = Yr,
@@ -63,16 +72,17 @@ get_results <- function(mod_path, df, itervec, read_truth, Rscen = NULL, res_nam
                        Recruit = Value.Recr,
                        SPR = Value.SPRratio, 
                        F = Value.F,
-                       Depletion = Value.Bratio) %>%
-                select(year, SSB, Recruit, SPR, F, Depletion) %>%
-                mutate(SSB_sd = NA, Recruit_sd = NA, SPR_sd = NA, F_sd = NA, Depletion_sd = NA)
+                       Depletion = Value.Bratio,
+                       OFL = Value.OFLCatch) %>%
+                select(year, SSB, Recruit, SPR, F, Depletion, OFL) %>%
+                mutate(SSB_sd = NA, Recruit_sd = NA, SPR_sd = NA, F_sd = NA, Depletion_sd = NA, OFL_sd = NA)
             }
             d2 <- d2 %>%
               mutate(SPR = 1-SPR) 
             d2$Depletion[which(d2$year == 1)] <- 1
             d2$Depletion_sd[which(d2$year == 1)] <- 0
             d2$year <- as.numeric(d2$year)
-            d2 <- d2 %>% filter(year <= 100) 
+            # d2 <- d2 %>% filter(year <= 100) 
             d2 <- d2 %>% 
               mutate(lifehistory = lh) %>%
               mutate(iteration = itervec[y]) %>%
@@ -87,16 +97,18 @@ get_results <- function(mod_path, df, itervec, read_truth, Rscen = NULL, res_nam
               mutate(Rich = df[x,"Rich"])
             }
               
-            
+            s1 <- data.frame('max_grad' = r1$maximum_gradient_component,
+                             'LN_R0' = r1$parameters[which(r1$parameters$Label == "SR_LN(R0)"),"Value"],
+                             "SSB0" = r1$SBzero)
             s2 <- s1 %>% 
-              select(SSB_MSY, TotYield_MSY, F_MSY, max_grad, SR_LN_R0, Size_DblN_peak_Fishery_1, Size_DblN_ascend_se_Fishery_1) %>%
-              rename(SSBmsy = SSB_MSY,
-                     MSY = TotYield_MSY,
-                     Fmsy = F_MSY,
-                     LN_R0 = SR_LN_R0,
-                     Selex_peak = Size_DblN_peak_Fishery_1,
-                     Selex_shape = Size_DblN_ascend_se_Fishery_1) %>%
-              mutate(SSB0 = r1$SBzero) %>%
+              # select(SSB_MSY, TotYield_MSY, F_MSY, max_grad, SR_LN_R0, Size_DblN_peak_Fishery_1, Size_DblN_ascend_se_Fishery_1) %>%
+              # rename(SSBmsy = SSB_MSY,
+              #        MSY = TotYield_MSY,
+              #        Fmsy = F_MSY,
+              #        LN_R0 = SR_LN_R0,
+              #        Selex_peak = Size_DblN_peak_Fishery_1,
+              #        Selex_shape = Size_DblN_ascend_se_Fishery_1) %>%
+              # mutate(SSB0 = r1$SBzero) %>%
               mutate(lifehistory = lh) %>%
               mutate(iteration = itervec[y]) %>%
               mutate(Rest = Rscen[z]) %>%

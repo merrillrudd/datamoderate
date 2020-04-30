@@ -226,9 +226,9 @@
            -15             5          -999          -999          0.05             0        -99          0          0          0          0        0.5          0          0  #  SizeSel_P5_Fishery(1)
             -5          1000           999           999          0.05             0        -99          0          0          0          0        0.5          0          0  #  SizeSel_P6_Fishery(1)
 # 2   Survey LenSelex
-            20           199          42          42          0.05             0          2          0          0          0          0        0.5          0          0  #  SizeSel_P1_Fishery(1)
+            20           199          42          42          0.05             0          -2          0          0          0          0        0.5          0          0  #  SizeSel_P1_Fishery(1)
             -5             3            -3            -3          0.05             0        -99          0          0          0          0        0.5          0          0  #  SizeSel_P2_Fishery(1)
-            -4            12           5.1           5.1          0.05             0          3          0          0          0          0        0.5          0          0  #  SizeSel_P3_Fishery(1)
+            -4            12           5.1           5.1          0.05             0          -3          0          0          0          0        0.5          0          0  #  SizeSel_P3_Fishery(1)
             -2            16            15            15          0.05             0        -99          0          0          0          0        0.5          0          0  #  SizeSel_P4_Fishery(1)
            -15             5          -999          -999          0.05             0        -99          0          0          0          0        0.5          0          0  #  SizeSel_P5_Fishery(1)
             -5          1000           999           999          0.05             0        -99          0          0          0          0        0.5          0          0  #  SizeSel_P6_Fishery(1)

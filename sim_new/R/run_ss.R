@@ -40,7 +40,7 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
       end <- 6
       temp_comp <- new_comp
       
-      if(df[x,"Samp"] != "perfect"){
+      if(df[x,"Samp"] %in% c("perfect","Ndecline") == FALSE){
         set.seed(456)
         for(y in 1:Nyears){
           year_temp <- new_comp$Yr == y
@@ -50,6 +50,20 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
             out_comp <- as.matrix(rmultinom(1, size = Nsamp, prob = probs))
             temp_comp[year_temp,(end+1):dim(new_comp)[2]] <- out_comp
             temp_comp[,"Nsamp"] <- Nsamp
+          }
+        }
+        test_comp <- cbind(temp_comp[,1:end], round(temp_comp[,(end+1):dim(new_comp)[2]],0))
+      }
+      if(df[x,"Samp"] == "Ndecline"){
+        set.seed(456)
+        for(y in 1:Nyears){
+          year_temp <- new_comp$Yr == y
+          if(sum(year_temp)!=0){
+            probs <- new_comp[year_temp, -(1:end)]
+            Nsamp <- ifelse(y <= 87, 200, 50)
+            out_comp <- as.matrix(rmultinom(1, size = Nsamp, prob = probs))
+            temp_comp[year_temp,(end+1):dim(new_comp)[2]] <- out_comp
+            temp_comp[year_temp,"Nsamp"] <- Nsamp
           }
         }
         test_comp <- cbind(temp_comp[,1:end], round(temp_comp[,(end+1):dim(new_comp)[2]],0))
@@ -115,9 +129,9 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
                                ifelse(lh == "long_slow", 6,
                                       ifelse(lh == "long_fast", 4, NA))))
         ctl$do_recdev <- 1
-        ctl$recdev_early_start <- 1
+        ctl$recdev_early_start <- -29
         ctl$recdev_phase <- 3
-        ctl$MainRdevYrFirst <- max(100 - lyears + 1 - dat$Nages,2)
+        ctl$MainRdevYrFirst <- max(100 - lyears + 1 - dat$Nages,1)
         ctl$MainRdevYrLast <- 100 - rmyrs
         
         ctl$size_selex_parms[1,"LO"] <- 11.5
@@ -145,8 +159,8 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
         # d1 <- get_results_derived(r1)
         # t2 <- SS_output(om_path)
         # d2 <- get_results_derived(t2)
-        # plot(d2$Value.Bratio)
-        # lines(d1$Value.Bratio)
+        # plot(d2$Value.SSB[1:100])
+        # lines(d1$Value.SSB[1:100])
       }
       ########################################
       ## second iter, bias adjustment
@@ -183,18 +197,18 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
           bin <- get_bin(ss_bin)
           if(run_hess == TRUE) system(paste0(navigate, ";", bin), ignore.stdout = TRUE)
           if(run_hess == FALSE) system(paste0(navigate, ";", bin, " -nohess"), ignore.stdout = TRUE)
+
+          # r1 <- SS_output(rpath2)
+          # d1 <- get_results_derived(r1)
+          # t2 <- SS_output(om_path)
+          # d2 <- get_results_derived(t2)
+          # plot(d2$Value.SSB[1:100])
+          # lines(d1$Value.SSB[1:100])
           
-          r1 <- SS_output(rpath2)
-          d1 <- get_results_derived(r1)
-          t2 <- SS_output(om_path)
-          d2 <- get_results_derived(t2)
-          plot(d2$Value.Bratio)
-          lines(d1$Value.Bratio)
-          
-          if(itervec[i] == 1){
-            out <- r4ss::SS_output(rpath2)
-            r4ss::SS_plots(dir = rpath2, replist = out)     
-          }
+          # if(itervec[i] == 1){
+          #   out <- r4ss::SS_output(rpath2)
+          #   r4ss::SS_plots(dir = rpath2, replist = out)     
+          # }
         }
       }
       
