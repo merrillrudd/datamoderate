@@ -1,6 +1,5 @@
 run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest = TRUE, ncores, run_hess = FALSE){
-  registerDoParallel(ncores)
-  getDoParWorkers()
+
   for(x in 1:nrow(df)){
     lh <- df[x,"LifeHistory"]
     lh_path <- file.path(path, lh)
@@ -11,6 +10,9 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
     sig_path <- file.path(f_path, sig)
     
     dfile_path <- file.path(sig_path, "files")
+    
+    registerDoParallel(ncores)
+    getDoParWorkers()
     
     run_iters <- foreach(i = 1:length(itervec), .packages = c('ss3sim', 'r4ss')) %dopar%{
       ipath <- file.path(sig_path, itervec[i])
