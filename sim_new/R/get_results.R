@@ -34,7 +34,7 @@ get_results <- function(mod_path, df, itervec, read_truth, Rscen = NULL, res_nam
           lsamp <- df[x,"Samp"]
           if(df[x,"Rich"] == FALSE) res_dir <- file.path(path, itervec[y], lsamp, lyrs)
           if(df[x,"Rich"] == TRUE) res_dir <- file.path(path, itervec[y], paste0(lsamp,"_Rich"), lyrs)
-          if(all(is.null(Rscen)) | any(Rscen %in% c("R_unadjusted","R_biasadjusted","R_noest") == FALSE)) stop("must specify recruitment scenarios to read")
+          # if(all(is.null(Rscen)) | any(Rscen %in% c("R_unadjusted","R_biasadjusted","R_noest") == FALSE)) stop("must specify recruitment scenarios to read")
         }
         if(read_truth == TRUE){
           Rscen <- "om"
@@ -64,7 +64,7 @@ get_results <- function(mod_path, df, itervec, read_truth, Rscen = NULL, res_nam
                        Depletion_sd = StdDev.Bratio,
                        OFL = Value.OFLCatch,
                        OFL_sd = StdDev.OFLCatch) %>%
-                select(year, SSB, SSB_sd, Recruit, Recruit_sd, SPR, SPR_sd, F, F_sd, Depletion, Depletion_sd, OFL, OFL_sd)
+                dplyr::select(year, SSB, SSB_sd, Recruit, Recruit_sd, SPR, SPR_sd, F, F_sd, Depletion, Depletion_sd, OFL, OFL_sd)
             } else {
               d2 <- d1 %>% 
                 rename(year = Yr,
@@ -74,7 +74,7 @@ get_results <- function(mod_path, df, itervec, read_truth, Rscen = NULL, res_nam
                        F = Value.F,
                        Depletion = Value.Bratio,
                        OFL = Value.OFLCatch) %>%
-                select(year, SSB, Recruit, SPR, F, Depletion, OFL) %>%
+                dplyr::select(year, SSB, Recruit, SPR, F, Depletion, OFL) %>%
                 mutate(SSB_sd = NA, Recruit_sd = NA, SPR_sd = NA, F_sd = NA, Depletion_sd = NA, OFL_sd = NA)
             }
             d2 <- d2 %>%
@@ -99,7 +99,9 @@ get_results <- function(mod_path, df, itervec, read_truth, Rscen = NULL, res_nam
               
             s1 <- data.frame('max_grad' = r1$maximum_gradient_component,
                              'LN_R0' = r1$parameters[which(r1$parameters$Label == "SR_LN(R0)"),"Value"],
-                             "SSB0" = r1$SBzero)
+                             "SSB0" = r1$SBzero,
+                             'Selex_peak' = r1$parameters[which(r1$parameters$Label == "Size_DblN_peak_Fishery(1)"),"Value"],
+                             "Selex_ascend" = r1$parameters[which(r1$parameters$Label == "Size_DblN_ascend_se_Fishery(1)"),"Value"])
             s2 <- s1 %>% 
               # select(SSB_MSY, TotYield_MSY, F_MSY, max_grad, SR_LN_R0, Size_DblN_peak_Fishery_1, Size_DblN_ascend_se_Fishery_1) %>%
               # rename(SSBmsy = SSB_MSY,

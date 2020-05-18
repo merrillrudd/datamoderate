@@ -1,4 +1,4 @@
-run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest = TRUE, ncores, run_hess = FALSE){
+run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest = TRUE, ncores, run_hess = FALSE, samp_type = "multinomial"){
 
   for(x in 1:nrow(df)){
     lh <- df[x,"LifeHistory"]
@@ -20,7 +20,6 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
       
       if(df[x,"Rich"] == FALSE) samp_path <- file.path(ipath, df[x,"Samp"])
       if(df[x,"Rich"] == TRUE) samp_path <- file.path(ipath, paste0(df[x,"Samp"],"_Rich"))
-      if(clean == TRUE) unlink(samp_path, TRUE)
       dir.create(samp_path, showWarnings = FALSE)
       
       om_path <- file.path(ipath, "om")
@@ -38,9 +37,16 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
         dat$CPUE[1,"se_log"] <- 1
         dat <- sample_agecomp(dat_list = dat, fleets = NULL, Nsamp = NULL, years = NULL, cpar = NULL, ESS = NULL)
       }
+
       new_comp <- dat$lencomp
       end <- 6
-      temp_comp <- new_comp
+      
+      dat <- change_data(dat_list = dat, outfile = NULL, years = 1:100, fleets = 1, types = "len", len_bins = seq(10,82, by = 2), pop_binwidth = 1, pop_minimum_size = 10, pop_maximum_size = 82)
+      dat$lencomp[,1:ncol(new_comp)] <- new_comp
+      dat$lencomp[,(ncol(new_comp)+1):ncol(dat$lencomp)] <- 0
+      
+      new_comp <- dat$lencomp
+      temp_comp <- dat$lencomp
       
       if(df[x,"Samp"] %in% c("perfect","Ndecline") == FALSE){
         set.seed(456)
@@ -48,13 +54,18 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
           year_temp <- new_comp$Yr == y
           if(sum(year_temp)!=0){
             probs <- new_comp[year_temp, -(1:end)]
+            probs[which(probs == 0)] <- 0.00001
+            probs <- as.numeric(probs/sum(probs))
             Nsamp <- as.numeric(strsplit(as.character(df[x,"Samp"]),"N")[[1]][2])
-            out_comp <- as.matrix(rmultinom(1, size = Nsamp, prob = probs))
+            if(samp_type == "multinomial") out_comp <- as.matrix(rmultinom(1, size = Nsamp, prob = probs))
+            if(samp_type == "dirichlet"){
+              out_comp <- matrix(MCMCpack::rdirichlet(1, alpha = Nsamp * probs), ncol = 1)
+            }
             temp_comp[year_temp,(end+1):dim(new_comp)[2]] <- out_comp
             temp_comp[,"Nsamp"] <- Nsamp
           }
         }
-        test_comp <- cbind(temp_comp[,1:end], round(temp_comp[,(end+1):dim(new_comp)[2]],0))
+        test_comp <- cbind(temp_comp[,1:end], temp_comp[,(end+1):dim(new_comp)[2]])
       }
       if(df[x,"Samp"] == "Ndecline"){
         set.seed(456)
@@ -68,19 +79,19 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
             temp_comp[year_temp,"Nsamp"] <- Nsamp
           }
         }
-        test_comp <- cbind(temp_comp[,1:end], round(temp_comp[,(end+1):dim(new_comp)[2]],0))
+        test_comp <- cbind(temp_comp[,1:end], temp_comp[,(end+1):dim(new_comp)[2]])
       }
       if(df[x,"Samp"] == "perfect"){
         test_comp <- temp_comp
         test_comp[,"Nsamp"] <- 1000
       }
       dat$lencomp <- test_comp
-      SS_writedat(dat, file.path(samp_path, paste0("ss3.dat")), overwrite = TRUE)
+      if(samp_type == "multinomial") SS_writedat(dat, file.path(samp_path, paste0("ss3.dat")), overwrite = TRUE)
+      if(samp_type == "dirichlet") SS_writedat(dat, file.path(samp_path, paste0("ss3_dirichlet.dat")), overwrite = TRUE)
       
       ##################################
       ## setup estimation models
       lyr_path <- file.path(samp_path, df[x,"L"])
-      if(rewrite == TRUE) unlink(lyr_path, TRUE)
       dir.create(lyr_path, showWarnings = FALSE)
       lyears <- as.numeric(strsplit(as.character(df[x,"L"]),"L")[[1]][2])
       lyears_vec <- (Nyears - lyears + 1):Nyears
@@ -88,13 +99,19 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
       ########################################
       ## first iter, save unadjusted results
       ########################################
-      rpath1 <- file.path(lyr_path, "R_unadjusted")
+      if(is.na(df[x,"Fix"]) & is.na(df[x,"Adjust"])) rpath1 <- file.path(lyr_path, "R_unadjusted")
+      if(is.na(df[x,"Fix"]) == FALSE & is.na(df[x,"Adjust"])) rpath1 <- file.path(lyr_path, paste0("R_unadjusted_fix_", df[x,"Fix"]))
+      if(is.na(df[x,"Fix"]) & is.na(df[x,"Adjust"]) == FALSE) rpath1 <- file.path(lyr_path, paste0("R_unadjusted_change_", df[x,"Adjust"]))
       
       if(file.exists(file.path(rpath1, "Report.sso")) == FALSE | rewrite == TRUE){
         unlink(rpath1, TRUE)
         dir.create(rpath1, showWarnings = FALSE)
         copy_ctl <- file.copy(from = file.path(dfile_path, paste0(lh, "EM.ctl")), to = rpath1, overwrite = TRUE)
-        copy_dat <- file.copy(from = file.path(samp_path, 'ss3.dat'), to = rpath1, overwrite = TRUE)
+        if(samp_type == "multinomial") copy_dat <- file.copy(from = file.path(samp_path, 'ss3.dat'), to = rpath1, overwrite = TRUE)
+        if(samp_type == "dirichlet") {
+          copy_dat <- file.copy(from = file.path(samp_path, 'ss3_dirichlet.dat'), to = rpath1, overwrite = TRUE)
+          ignore <- file.rename(from = file.path(rpath1, "ss3_dirichlet.dat"), to = file.path(rpath1, "ss3.dat"))
+        }
         copy_f <- file.copy(from = file.path(dfile_path, "forecast.ss"), to = rpath1, overwrite = TRUE)
         copy_s <- file.copy(from = file.path(dfile_path, "starter.ss"), to = rpath1, overwrite = TRUE)
         
@@ -137,9 +154,25 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
         ctl$MainRdevYrLast <- 100 - rmyrs
         
         ctl$size_selex_parms[1,"LO"] <- 11.5
-        ctl$size_selex_parms[1,"HI"] <- 71.5
+        ctl$size_selex_parms[1,"HI"] <- 81.5
         ctl$size_selex_parms[7,"LO"] <- 11.5
-        ctl$size_selex_parms[7,"HI"] <- 71.5
+        ctl$size_selex_parms[7,"HI"] <- 81.5
+        
+        if(grepl("Selex", df[x,"Fix"])){
+          ctl$size_selex_parms[c(1,3),"PHASE"] <- c(-2,-3)
+        }
+        if(grepl("R0", df[x,"Fix"])){
+          ctl$SR_parms[1,"PHASE"] <- -1
+          ctl$recdev_phase <- 1
+        }
+        if(grepl("Linf", df[x,"Adjust"])){
+          val <- as.numeric(strsplit(df[x,"Adjust"], "_")[[1]][length(strsplit(df[x,"Adjust"],"_")[[1]])])
+          ctl$MG_parms["L_at_Amax_Fem_GP_1","INIT"] <- val
+        }
+        if(grepl("CV", df[x,"Adjust"])){
+          val <- as.numeric(strsplit(df[x,"Adjust"], "_")[[1]][length(strsplit(df[x,"Adjust"],"_")[[1]])])
+          ctl$MG_parms[grepl("CV", rownames(ctl$MG_parms)),"INIT"] <- val
+        }
         write <- r4ss::SS_writectl(ctllist = ctl, outfile = file.path(rpath1, "ss3.ctl"), overwrite = TRUE, verbose = FALSE)
         file.remove(file.path(rpath1, paste0(lh,"EM.ctl")))
         
@@ -161,13 +194,19 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
         # d1 <- get_results_derived(r1)
         # t2 <- SS_output(om_path)
         # d2 <- get_results_derived(t2)
-        # plot(d2$Value.SSB[1:100])
-        # lines(d1$Value.SSB[1:100])
+        # plot(d2$Value.Recr[which(d2$Yr > 0)], type = "l")
+        # lines(d1$Value.Recr[which(d2$Yr > 0)], col = "blue")
+        # if(itervec[i] == 1){
+        #   out <- r4ss::SS_output(rpath1, verbose = FALSE)
+        #   r4ss::SS_plots(dir = rpath1, replist = out)
+        # }
       }
       ########################################
       ## second iter, bias adjustment
       ########################################
-      rpath2 <- file.path(lyr_path, "R_biasadjusted")
+      if(is.na(df[x,"Fix"]) & is.na(df[x,"Adjust"])) rpath2 <- file.path(lyr_path, "R_biasadjusted")
+      if(is.na(df[x,"Fix"]) == FALSE & is.na(df[x,"Adjust"])) rpath2 <- file.path(lyr_path, paste0("R_biasadjusted_fix_", df[x,"Fix"]))
+      if(is.na(df[x,"Fix"]) & is.na(df[x,"Adjust"]) == FALSE) rpath2 <- file.path(lyr_path, paste0("R_biasadjusted_change_",df[x,"Adjust"]))
       
       if(file.exists(file.path(rpath2, "Report.sso")) == FALSE | rewrite == TRUE){
         unlink(rpath2, TRUE)
@@ -200,18 +239,21 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
           if(run_hess == TRUE) system(paste0(navigate, ";", bin), ignore.stdout = TRUE)
           if(run_hess == FALSE) system(paste0(navigate, ";", bin, " -nohess"), ignore.stdout = TRUE)
 
-          # r1 <- SS_output(rpath2)
-          # d1 <- get_results_derived(r1)
+          # dev.off()
+          # r3 <- SS_output(rpath2)
+          # d3 <- get_results_derived(r3)
           # t2 <- SS_output(om_path)
           # d2 <- get_results_derived(t2)
-          # plot(d2$Value.SSB[1:100])
-          # lines(d1$Value.SSB[1:100])
-          
+          # plot(d2$Value.Recr[which(d2$Yr %in% 1:100)], type = "l")
+          # lines(d1$Value.Recr[which(d2$Yr %in% 1:100)], col = "blue")
+          # plot(d2$Value.Bratio[which(d2$Yr %in% 1:100)], type = "l")
+          # lines(d1$Value.Bratio[which(d2$Yr %in% 1:100)], col = "blue")
+
           # if(itervec[i] == 1){
-          #   out <- r4ss::SS_output(rpath2)
-          #   r4ss::SS_plots(dir = rpath2, replist = out)     
+          #   out <- r4ss::SS_output(rpath2, verbose = FALSE)
+          #   r4ss::SS_plots(dir = rpath2, replist = out)
           # }
-        }
+        } else {next}
       }
       
       ########################################
