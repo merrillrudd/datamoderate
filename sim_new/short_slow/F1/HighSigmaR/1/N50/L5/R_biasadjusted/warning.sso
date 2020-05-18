@@ -1,0 +1,11 @@
+#V3.30.15.00-safe;_2020_03_26;_Stock_Synthesis_by_Richard_Methot_(NOAA)_using_ADMB_12.0
+#Stock Synthesis (SS) is a work of the U.S. Government and is not subject to copyright protection in the United States.
+#Foreign copyrights may apply. See copyright.txt for more information.
+Fri May  1 08:55:58 2020
+
+You have just one settlement event; recommend changing to recr_dist_method 4 which takes no recr_dist parameters
+bias adjustment ramp extends into forecast; biasadj set to 0.0 internally for forecast years
+setting in starter does not request all priors, and 1 parameters have priors and are not estimated, so their prior not included in obj_fun.
+ Early recdev biasadj is >2 times ratio of rmse to sigmaR
+ Early recdev biasadj is >2 times ratio of rmse to sigmaR
+ N warnings: 5
