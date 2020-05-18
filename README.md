@@ -4,7 +4,7 @@
 Simulation study located in `simulation` folder with joint R code `simulations.R`.
 
 ### Model runs in life history scenario folders
-* Life history scenarios (e.g. `shs`)
+* Life history scenarios (e.g. `short_slow`)
 * Fishing mortality scenario (e.g `F1`)
 * Recruitment variability scenario (e.g. `LowSigmaR`)
 * Files used to generate data in folder `files`
@@ -12,7 +12,7 @@ Simulation study located in `simulation` folder with joint R code `simulations.R
 * Output files for generated population -- true values found in `om`
  * True population values in `om/Report.sso`
  * Length composition in `om/data.ss_new`
-* Sample individuals per year to generate length composition (e.g. `N1000` for 1000 samples per year)
+* Sample individuals per year to generate length composition
  * `perfect.ss` used `SS_splitdat` to find perfect information on the length composition
  * `ss3.dat` sampled N number of individuals from the perfect length composition using multinomial
  * Number of years of length data for estimation models -- all use `ss3.dat` but will adjust the number of years of length to include (e.g. `L100` uses 100 years, `L75` uses 75 years, `L1` uses last year only)
@@ -24,13 +24,13 @@ Includes some helper functions.
 ## Some additional details on the methods
 Operating model runs initial life history, F, and recruitment scenario files without hessian to generate true population.
 * Four life history scenarios
- * shs = shorter-lived (max age = 30 years), slower-growing (expected to live at asymptotic length for final 10% of life)
- * shf = shorter-lived, faster-growing (expected to live at asymptotic length for final 50% of life)
- * los = longer-lived (max age = 60 years), slower-growing
- * lof = longer-lived, faster-growing
+ * short_slow = shorter-lived (max age = 30 years), slower-to-Linf (expected to live at asymptotic length for final 10% of life)
+ * short_fast = shorter-lived, faster-to-Linf (expected to live at asymptotic length for final 50% of life)
+ * long_slow = longer-lived (max age = 60 years), slower-to-Linf
+ * long_fast = longer-lived, faster-to-Linf
  * Each with variable M and k but sharing linf = 55 cm, length at 50% selectivity = 36.3 cm, h = 0.7, t0 = -1
 * One fishing mortality time series, representative of U.S. West coast nearshore stocks. 
-* Two recruitment scenarios: `LowSigmaR` sigmaR = 0.4 and `HighSigmaR` sigmaR = 0.8 (also explored deterministic and very low sigmaR)
+* Two recruitment scenarios: `LowSigmaR` sigmaR = 0.4 and `HighSigmaR` sigmaR = 0.8 (also explored deterministic)
 * 100 simulation replicates of each life history, F, and recruitment scenario.
 * Used to create the "true population", with values in `Report.sso` and information on length structure in `data.ss_new`
 
