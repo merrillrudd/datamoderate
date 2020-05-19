@@ -335,7 +335,7 @@ Fscen <- c("F1","F2")
 res_name <- "results_variable_rich"
 Rich <- c(TRUE)
 
-scen_grid_rich <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich)
+scen_grid_rich <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich, "Fix" = NA, "Adjust" = NA)
 scen_grid <- scen_grid_rich
 
 ncores <- 14
@@ -481,7 +481,7 @@ Fscen <- c("F1","F2")
 res_name <- "results_variable_perfect"
 Rich <- c(FALSE)
 
-scen_grid <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich)
+scen_grid <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich, "Fix" = NA, "Adjust" = NA)
 
 ncores <- 14
 itervec <- 1:100
@@ -642,7 +642,7 @@ Fscen <- c("F1","F2")
 res_name <- "results_variable_avgsample"
 Rich <- c(FALSE)
 
-scen_grid <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich)
+scen_grid <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich, "Fix" = NA, "Adjust" = NA)
 
 ncores <- 14
 itervec <- 1:100
@@ -747,7 +747,7 @@ Fscen <- c("F1","F2")
 res_name <- "results_variable_lowsample"
 Rich <- c(FALSE)
 
-scen_grid <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich)
+scen_grid <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich, "Fix" = NA, "Adjust" = NA)
 
 ncores <- 14
 itervec <- 1:100
@@ -845,7 +845,7 @@ Fscen <- c("F1","F2")
 res_name <- "results_variable_sampledecline"
 Rich <- c(FALSE)
 
-scen_grid <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich)
+scen_grid <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich, "Fix" = NA, "Adjust" = NA)
 ncores <- 14
 itervec <- 1:100
 rewrite = FALSE
@@ -1747,11 +1747,11 @@ ggsave(file.path(fig_path, "RE_byYear_F_LowSigmaR.png"), pret, height = 10, widt
 ### Pull data
 ###########################
 lh_vec <- lh_info$ShortName
-SigRscen <- c("LowSigmaR")
+SigRscen <- c("HighSigmaR")
 Lyears <- c("L75")
 Lsamp <- c("N200")
 Fscen <- c("F1")
-res_name <- "results_variable_sample"
+res_name <- "results_variable_avgsample"
 Rich <- c(FALSE)
 
 scen_grid <- expand.grid("SigmaR" = SigRscen, "LifeHistory" = lh_vec, "L" = Lyears, "Samp" = Lsamp, "F" = Fscen, "Rich" = Rich)
