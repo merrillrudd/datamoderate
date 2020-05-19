@@ -1,7 +1,7 @@
 # datamoderate study
 
 ## Folder overview
-Simulation study located in `simulation` folder with joint R code `simulations.R`.
+Simulation study located in `sim_new` folder with R code `sim_SS.R`.
 
 ### Model runs in life history scenario folders
 * Life history scenarios (e.g. `short_slow`)
