@@ -16,7 +16,8 @@ pull_data <- function(path, df, itervec){
       rpath1 <- file.path(lyr_path, "R_unadjusted")
       dat <- SS_readdat(file.path(rpath1, "ss3.dat"), verbose = FALSE)
       out <- list()
-      lencomp <- dat$lencomp[,c(1,7:ncol(dat$lencomp))] %>% rename(year = Yr) %>% filter(year %in% 1:100)
+      lencomp <- dat$lencomp[,c(1,7:ncol(dat$lencomp))] %>% rename(year = Yr) %>% filter(year %in% 1:100) 
+      lencomp <- lencomp[,1:33]
       catch <- dat$catch %>% filter(year >= 1) %>% select(year, catch, catch_se)
       out <- full_join(catch, lencomp, by = "year") %>% mutate(iteration = itervec[i])
       return(out)

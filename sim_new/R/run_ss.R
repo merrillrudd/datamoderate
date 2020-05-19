@@ -253,7 +253,7 @@ run_ss <- function(df, path, itervec, clean = FALSE, rewrite = TRUE, run_noest =
           #   out <- r4ss::SS_output(rpath2, verbose = FALSE)
           #   r4ss::SS_plots(dir = rpath2, replist = out)
           # }
-        } else {next}
+        } else {return(NULL)}
       }
       
       ########################################
