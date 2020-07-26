@@ -1,0 +1,12 @@
+#V3.30.14.00-safe;_2019_07_19;_Stock_Synthesis_by_Richard_Methot_(NOAA)_using_ADMB_12.0
+#Stock Synthesis (SS) is a work of the U.S. Government and is not subject to copyright protection in the United States.
+#Foreign copyrights may apply. See copyright.txt for more information.
+Sun Jul 19 06:35:07 2020
+
+You have just one settlement event; recommend changing to recr_dist_method 4 which takes no recr_dist parameters
+Fleet:_1 max bound on parameter for size at peak is 120.5; should be <= midsize bin N-1 (81.5)
+Fleet:_2 max bound on parameter for size at peak is 120.5; should be <= midsize bin N-1 (81.5)
+ Main recdev biasadj is >2 times ratio of rmse to sigmaR
+ Main recdev biasadj is >2 times ratio of rmse to sigmaR
+ N warnings: 5
+Number_of_active_parameters_on_or_near_bounds: 0
